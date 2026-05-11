@@ -298,7 +298,7 @@ if __name__ == '__main__':
 
     # Define a trainer class
     trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
-    trainer.criterion = LovaszCELoss(alpha=0.5, ignore_index=None, classes='present') #D
+    trainer.criterion = LovaszCELoss(alpha=0.5, ignore_index=None, classes='present') #D, Attaches the Lov loss to the trainer and confirms it in the console.
     print('Using Lovász-CE loss') #D
    
     

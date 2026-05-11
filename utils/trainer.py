@@ -117,7 +117,7 @@ class ModelTrainer:
                 makedirs(config.saving_path)
             config.save()
 
-        self.criterion = None   #D
+        self.criterion = None   #D, Initialises the custom loss criterion as empty and stores the max epoch count for use in the alpha schedule.
         self.config_max_epoch = config.max_epoch  #D
         return 
 
@@ -168,7 +168,7 @@ class ModelTrainer:
             self.step = 0
             for batch in training_loader:
 
-                # Check kill signal (running_PID.txt deleted)
+                # Check kill signal 
                 if config.saving and not exists(PID_file):
                     continue
 
@@ -188,7 +188,7 @@ class ModelTrainer:
 
                 # Forward pass
                 outputs = net(batch, config)
-                loss = net.loss(outputs, batch.labels, criterion=self.criterion) #D
+                loss = net.loss(outputs, batch.labels, criterion=self.criterion) #D, passes the custom Lov loss into the network to replace the default Cross-Entropy loss.
                 acc = net.accuracy(outputs, batch.labels)
 
                 t += [time.time()]
@@ -238,15 +238,15 @@ class ModelTrainer:
 
                 self.step += 1
 
-            ##############
+           
             # End of epoch
-            ##############
+           
 
-            # Check kill signal (running_PID.txt deleted)
+            # Check kill signal 
             if config.saving and not exists(PID_file):
                 break
 
-            if self.criterion is not None: #D
+            if self.criterion is not None: #D, This runs at the end of every epoch and adjusts how much lov contributes relative to cross entropy.
                 alpha = max(0.5, 0.75 - (self.epoch / self.config_max_epoch) * 0.25)
                 self.criterion.alpha = alpha
                 if self.epoch % 10 == 0:
