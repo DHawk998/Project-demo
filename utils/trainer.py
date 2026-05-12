@@ -421,7 +421,7 @@ class ModelTrainer:
 
         return C1
 
-    def cloud_segmentation_validation(self, net, val_loader, config, debug=False):
+    def cloud_segmentation_validation(self, net, val_loader, config, weighter=None, debug=False):
         """
         Validation method for cloud segmentation models
         """
@@ -610,8 +610,8 @@ class ModelTrainer:
         mIoU = 100 * np.mean(IoUs)
         print('{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
         if weighter is not None:
-        weighter.update(IoUs)
-        self.criterion.set_class_weights(weighter.get_weights().cuda())
+            weighter.update(IoUs)
+            self.criterion.set_class_weights(weighter.get_weights().cuda())
         
       
 
