@@ -337,7 +337,7 @@ if __name__ == '__main__':
     print('**************')
 
     # Training
-    trainer.train(net, training_loader, test_loader, config)
+    trainer.train(net, training_loader, test_loader, config, weighter=weighter)
 
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
