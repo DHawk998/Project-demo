@@ -34,6 +34,35 @@ from utils.config import Config
 from utils.trainer import ModelTrainer
 from models.architectures import KPFCNN
 from lovsoftmax import LovaszCELoss                #D
+class AdaptiveClassWeighter: #class tracks how each bad each class is segmented and shifts beta. Beta affects how the new IoU weights influence weights.
+    #penalises poor classes more.
+    """
+    Computes inverse IoU weights with exponential moving average smoothing.
+    Classes with low IoU get higher weights so the loss penalises them more.
+    Beta = 0.9 means weights update slowly to avoid noise from individual epochs/batches.
+    """
+    def __init__(self, num_classes, beta=0.9):
+        self.num_classes = num_classes
+        self.beta = beta
+        self.ema_weights = torch.ones(num_classes)  
+
+    def update(self, iou_values):
+        """
+        iou_values: list or tensor of per-class IoU scores (0 to 1)
+        """
+        iou_tensor = torch.tensor(iou_values, dtype=torch.float32)
+
+        # Invert IoU — low IoU becomes high weight
+        inverse_iou = 1.0 / (iou_tensor + 1e-6)  # Small epsilon to avoid div by zero.
+
+        # Normalise so weights sum to num_classes (keeps scale stable).
+        inverse_iou = inverse_iou / inverse_iou.mean()
+
+        # Exponential moving average update
+        self.ema_weights = self.beta * self.ema_weights + (1 - self.beta) * inverse_iou
+
+    def get_weights(self):
+        return self.ema_weights
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -297,10 +326,10 @@ if __name__ == '__main__':
         print('\n*************************************\n')
 
     # Define a trainer class
-    trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
-    trainer.criterion = LovaszCELoss(alpha=0.5, ignore_index=None, classes='present') #D, Attaches the Lov loss to the trainer and confirms it in the console.
+    trainer = ModelTrainer(net, config, chkp_path=chosen_chkp) 
+    trainer.criterion = LovaszCELoss(alpha=0.5, ignore_index=None, classes='present') #D
     print('Using Lovász-CE loss') #D
-   
+    weighter = AdaptiveClassWeighter(num_classes=training_dataset.num_classes, beta=0.9) #D
     
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
