@@ -279,7 +279,7 @@ class ModelTrainer:
 
             # Validation
             net.eval()
-            self.validation(net, val_loader, config)
+            self.validation(net, val_loader, config, weighter=weighter)
             net.train()
 
         print('Finished Training')
@@ -288,14 +288,14 @@ class ModelTrainer:
     # Validation methods
     # ------------------------------------------------------------------------------------------------------------------
 
-    def validation(self, net, val_loader, config: Config):
+    def validation(self, net, val_loader, config: Config, weighter=None):
 
         if config.dataset_task == 'classification':
             self.object_classification_validation(net, val_loader, config)
         elif config.dataset_task == 'segmentation':
             self.object_segmentation_validation(net, val_loader, config)
         elif config.dataset_task == 'cloud_segmentation':
-            self.cloud_segmentation_validation(net, val_loader, config)
+            self.cloud_segmentation_validation(net, val_loader, config, weighter=weighter)
         elif config.dataset_task == 'slam_segmentation':
             self.slam_segmentation_validation(net, val_loader, config)
         else:
@@ -609,6 +609,9 @@ class ModelTrainer:
         # Print instance mean
         mIoU = 100 * np.mean(IoUs)
         print('{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
+        if weighter is not None:
+        weighter.update(IoUs)
+        self.criterion.set_class_weights(weighter.get_weights().cuda())
         
       
 
